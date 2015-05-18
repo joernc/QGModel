@@ -7,7 +7,7 @@
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
+# QGModel is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
@@ -42,8 +42,8 @@ class Model:
     quantities that are advected horizontally.  Implementations of this model
     need to specify the number of conserved quantities (nz) and supply an
     inversion relation that yield the streamfuncion given the conserved quan-
-    tities.  The model geometry is doubly periodic in the perturbations and
-    mean flow and gradients in the conserved quantities can be prescribed.
+    tities.  The model geometry is doubly periodic in the perturbations; mean
+    flow and gradients in the conserved quantities can be prescribed.
     """
 
     def __init__(self, L, n, nz, dt):
