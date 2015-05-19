@@ -61,9 +61,9 @@ m.snapshot(folder)
 # adopted from Callies et al. (2015) to account for the the reduced
 # resolution.
 
-#m.nu = 2.5e46 * 4.**20
-#m.diffexp = 20
-#m.hypodiff = 1e-16
+m.nu = 2.5e46 * 4.**20
+m.diffexp = 20
+m.hypodiff = 1e-16
 
 # Load model state: This simple command allows one to restart the model
 # from a previously saved state.  All that is necessary is the folder
