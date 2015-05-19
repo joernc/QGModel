@@ -277,8 +277,8 @@ class Eady(Model):
         self.u = np.array([0, - Sx * H])
         self.v = np.array([0, - Sy * H])
         # mean PV gradients
-        self.qx = np.array([+ f**2 * Sy / N**2, - f**2 * Sy / N**2])
-        self.qy = np.array([- f**2 * Sx / N**2, + f**2 * Sx / N**2])
+        self.qx = np.array([- f**2 * Sy / N**2, + f**2 * Sy / N**2])
+        self.qy = np.array([+ f**2 * Sx / N**2, - f**2 * Sx / N**2])
 
     def invert(self, q):
         """Eady inversion."""
