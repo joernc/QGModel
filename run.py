@@ -1,4 +1,4 @@
-# Copyright (C) 2013,2014,2015 Jörn Callies
+# Copyright (C) 2013,2014,2015 Joern Callies
 #
 # This file is part of QGModel.
 #
@@ -32,6 +32,12 @@ import model
 # model can be restarted with a reduced time step when it blows up (see
 # below).
 
+#folder = 'two-layer'
+#m = model.TwoLayer(5e5, 128, 5000.)
+#m.initmean(8e-5, 2.5e-2, 0., 0.)
+#m.initq(1e-7 * np.random.rand(2, 128, 128))
+#m.snapshot(folder)
+
 folder = 'eady'
 m = model.Eady(5e5, 128, 5000.)
 m.initmean(1e-4, 8e-3, 500., 1e-4, 0.)
@@ -55,9 +61,9 @@ m.snapshot(folder)
 # adopted from Callies et al. (2015) to account for the the reduced
 # resolution.
 
-m.nu = 2.5e46 * 4.**20
-m.diffexp = 20
-m.hypodiff = 1e-16
+#m.nu = 2.5e46 * 4.**20
+#m.diffexp = 20
+#m.hypodiff = 1e-16
 
 # Load model state: This simple command allows one to restart the model
 # from a previously saved state.  All that is necessary is the folder

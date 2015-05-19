@@ -1,4 +1,4 @@
-# Copyright (C) 2013,2014,2015 Jörn Callies
+# Copyright (C) 2013,2014,2015 Joern Callies
 #
 # This file is part of QGModel.
 #
@@ -220,6 +220,40 @@ class TwoDim(Model):
         return - q / k2
 
 
+class TwoLayer(Model):
+
+    """Two-layer model
+
+    This implements a two-layer model with a rigid lid.  The two conserved
+    quantities are the PV anomalies in the two layers (q[0] is the upper-layer
+    PV, q[1] the lower-layer PV).  The deformation radius is prescribed by
+    specifying the deformation wavenumber kd (see e.g. Larichev and Held,
+    1995).
+    """
+
+    def __init__(self, L, n, dt):
+        Model.__init__(self, L, n, 2, dt)
+
+    def initmean(self, kd, u, v, beta):
+        """Initialize the mean state of the model."""
+        self.kd = kd  # Deformation wavenumber.
+        # mean flow
+        self.u = np.array([u, 0])
+        self.v = np.array([v, 0])
+        # mean PV gradients
+        self.qx = np.array([- kd**2 * v / 2, + kd**2 * v / 2])
+        self.qy = np.array([beta + kd**2 * u / 2, beta - kd**2 * u / 2])
+
+    def invert(self, q):
+        """Two-layer inversion."""
+        p = np.zeros([self.nz, self.n, self.n/2 + 1], dtype=complex)
+        kh = np.hypot(self.k, self.l)
+        kh[0,0] = 1.  # prevent div. by zero
+        p[0,:,:] = (self.kd**2 + 2 * kh**2) * q[0,:,:] + self.kd**2 * q[1,:,:]
+        p[1,:,:] = self.kd**2 * q[0,:,:] + (self.kd**2 + 2 * kh**2) * q[1,:,:]
+        return - p / (2 * kh**2 * (self.kd**2 + kh**2))
+
+
 class Eady(Model):
 
     """Eady model
@@ -243,8 +277,8 @@ class Eady(Model):
         self.u = np.array([0, - Sx * H])
         self.v = np.array([0, - Sy * H])
         # mean PV gradients
-        self.qx = np.array([f**2 * Sy / N**2, -f**2 * Sy / N**2])
-        self.qy = np.array([f**2 * Sx / N**2, -f**2 * Sx / N**2])
+        self.qx = np.array([+ f**2 * Sy / N**2, - f**2 * Sy / N**2])
+        self.qy = np.array([- f**2 * Sx / N**2, + f**2 * Sx / N**2])
 
     def invert(self, q):
         """Eady inversion."""
@@ -285,11 +319,11 @@ class FloatingEady(Model):
         self.v = np.array([0, - Sy[0] * H])
         # mean PV gradients
         self.qx = np.array([
-            f**2 * Sy[0] / N[0]**2,
-            -f**2 * (Sy[0] / N[0]**2 - Sy[1] / N[1]**2)])
+            - f**2 * Sy[0] / N[0]**2,
+            + f**2 * (Sy[0] / N[0]**2 - Sy[1] / N[1]**2)])
         self.qy = np.array([
-            f**2 * Sx[0] / N[0]**2,
-            -f**2 * (Sx[0] / N[0]**2 - Sx[1] / N[1]**2)])
+            + f**2 * Sx[0] / N[0]**2,
+            - f**2 * (Sx[0] / N[0]**2 - Sx[1] / N[1]**2)])
 
     def invert(self, q):
         """Floating Eady inversion."""
@@ -334,13 +368,13 @@ class TwoEady(Model):
         self.v = np.array([0, - Sy[0] * H[0], - Sy[0] * H[0] - Sy[1] * H[1]])
         # mean PV gradients
         self.qx = np.array([
-            f**2 * Sy[0] / N[0]**2,
-            -f**2 * (Sy[0] / N[0]**2 - Sy[1] / N[1]**2),
-            -f**2 * Sy[1] / N[1]**2])
+            - f**2 * Sy[0] / N[0]**2,
+            + f**2 * (Sy[0] / N[0]**2 - Sy[1] / N[1]**2),
+            + f**2 * Sy[1] / N[1]**2])
         self.qy = np.array([
-            f**2 * Sx[0] / N[0]**2,
-            -f**2 * (Sx[0] / N[0]**2 - Sx[1] / N[1]**2),
-            -f**2 * Sx[1] / N[1]**2])
+            + f**2 * Sx[0] / N[0]**2,
+            - f**2 * (Sx[0] / N[0]**2 - Sx[1] / N[1]**2),
+            - f**2 * Sx[1] / N[1]**2])
 
     def invert(self, q):
         """Two-Eady inversion."""
