@@ -237,9 +237,9 @@ class TwoLayer(Model):
     def initmean(self, kd, u, v, beta):
         """Initialize the mean state of the model."""
         self.kd = kd  # Deformation wavenumber.
-        # mean flow
-        self.u = np.array([u, 0])
-        self.v = np.array([v, 0])
+        # mean flow (zero in lower layer)
+        self.u[0] = u
+        self.v[0] = v
         # mean PV gradients
         self.qx = np.array([- kd**2 * v / 2, + kd**2 * v / 2])
         self.qy = np.array([beta + kd**2 * u / 2, beta - kd**2 * u / 2])
