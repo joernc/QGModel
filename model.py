@@ -349,7 +349,7 @@ class TwoEady(Model):
     quantities at the surface, the interface between the layers, and the
     bottom:
       q[0] = - f b(0) / N[0]^2,
-      q[1] = + f [b^+(-H[0]) / N[0]^2 - b^-(-H[0]) / N[0]^2,
+      q[1] = + f [b^+(-H[0]) / N[0]^2 - b^-(-H[0]) / N[1]^2,
       q[0] = + f b(-H[0]-H[1]) / N[1]^2,
     where N[0] and N[1] are the buoyancy frequencies of the two layers and H[0]
     and H[1] are their depths.
