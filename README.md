@@ -4,7 +4,7 @@ This is Python code that solves the nonlinear QG equations for PV anomalies on a
 1. a fully-dealiased pseudo-spectral code that steps forward the PV conservation equations and
 2. implementations of specific model types that provide an inversion relation.
 
-At the moment, four model types are supported:
+At the moment, five model types are supported:
 
 1. two-dimensional dynamics (`TwoDim`),
 2. two-layer dynamics (`TwoLayer`),
