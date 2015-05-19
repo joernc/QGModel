@@ -61,7 +61,6 @@ class Model:
         self.grid()             # set up grid
         self.time = 0.          # initialize time
 
-
     def grid(self):
         """Set up spectral and physical grid."""
         # spectral grid
@@ -73,12 +72,10 @@ class Model:
         y = np.arange(self.n) * self.L / self.n
         self.x, self.y = np.meshgrid(x, y)
 
-
     def initq(self, qp):
         """Transform qp to spectral space and initialize q."""
         self.q = fftw.interfaces.numpy_fft.rfft2(qp, threads=self.threads)
         self.q[:,0,0] = 0.  # ensure zero mean
-
 
     def timestep(self):
         """Perform time step."""
@@ -161,9 +158,10 @@ class Model:
         """Print model state info on screen."""
         # time (in seconds)
         sys.stdout.write(' {:15.0f}'.format(self.time))
-        # enstrophy for each layer
+        # mean enstrophy for each layer
         for i in range(self.nz):
-            sys.stdout.write(' {:5e}'.format(np.sum(np.abs(self.q[i,:,:])**2)))
+            sys.stdout.write(' {:5e}'.format(np.mean(np.abs(self.q[i,:,:])**2)
+                /self.n**2))
         sys.stdout.write('\n')
 
     def snapshot(self, name):
