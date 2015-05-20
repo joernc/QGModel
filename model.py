@@ -66,13 +66,13 @@ class Model:
         # spectral grid
         k = abs(np.fft.fftfreq(self.n, d=self.L/(2*np.pi*self.n))[:self.n/2+1])
         l = np.fft.fftfreq(self.n, d=self.L/(2*np.pi*self.n))
-        self.k = k.reshape((1, self.n/2 + 1))
-        self.l = l.reshape((self.n, 1))
+        self.k = k[np.newaxis,:]
+        self.l = l[:,np.newaxis]
         # physical grid
         x = np.arange(self.n) * self.L / self.n
         y = np.arange(self.n) * self.L / self.n
-        self.x = x.reshape((1, self.n))
-        self.y = y.reshape((self.n, 1))
+        self.x = x[np.newaxis,:]
+        self.y = y[:,np.newaxis]
 
     def initq(self, qp):
         """Transform qp to spectral space and initialize q."""
