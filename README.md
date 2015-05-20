@@ -13,3 +13,5 @@ At the moment, five model types are supported:
 5. two-Eady dynamics (`TwoEady`).
 
 See `run.py` for an example of how a model is initialized and run.
+
+This model makes use of [PyFFTW](https://pypi.python.org/pypi/pyFFTW), a Python wrapper of [FFTW](http://www.fftw.org/). Follow the [installation instructions](https://github.com/hgomersall/pyFFTW) for PyFFTW if you do not have it installed already.

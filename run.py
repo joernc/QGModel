@@ -41,7 +41,7 @@ import model
 folder = 'eady'
 m = model.Eady(5e5, 128, 5000.)
 m.initmean(1e-4, 8e-3, 500., 1e-4, 0.)
-m.initq(1e-7 * np.random.rand(2, 128, 128))
+m.initq(1e-5 * np.random.rand(2, 128, 128))
 m.snapshot(folder)
 
 #folder = 'fleady'

@@ -28,8 +28,8 @@ import matplotlib.colors as mcl
 
 # Define blue colormap with nice blue.
 cdict = {
-    'red': ((0.0, 0.0, 0.0), (0.5, 0.216, 0.216), (1.0, 1.0, 1.0)), \
-    'green': ((0.0, 0.0, 0.0), (0.5, 0.494, 0.494), (1.0, 1.0, 1.0)), \
+    'red': ((0.0, 0.0, 0.0), (0.5, 0.216, 0.216), (1.0, 1.0, 1.0)),
+    'green': ((0.0, 0.0, 0.0), (0.5, 0.494, 0.494), (1.0, 1.0, 1.0)),
     'blue': ((0.0, 0.0, 0.0), (0.5, 0.722, 0.722), (1.0, 1.0, 1.0))}
 cm_blues = mcl.LinearSegmentedColormap('cm_blues', cdict, 256)
 
@@ -92,7 +92,7 @@ class Model:
         self.q += (q1 + 2*q2 + 2*q3 + q4) / 6
 
     def diffusion(self):
-        """Perform impolicit (hyper- and hypo-) diffusion step."""
+        """Perform implicit (hyper- and hypo-) diffusion step."""
         k2 = self.k**2 + self.l**2
         k2[0,0] = 1.  # Prevent div. by zero.
         self.q *= np.exp(-self.nu * k2**(self.diffexp/2.) * self.dt)
