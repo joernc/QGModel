@@ -66,11 +66,13 @@ class Model:
         # spectral grid
         k = abs(np.fft.fftfreq(self.n, d=self.L/(2*np.pi*self.n))[:self.n/2+1])
         l = np.fft.fftfreq(self.n, d=self.L/(2*np.pi*self.n))
-        self.k, self.l = np.meshgrid(k, l)
+        self.k = k.reshape((1, self.n/2 + 1))
+        self.l = l.reshape((self.n, 1))
         # physical grid
         x = np.arange(self.n) * self.L / self.n
         y = np.arange(self.n) * self.L / self.n
-        self.x, self.y = np.meshgrid(x, y)
+        self.x = x.reshape((1, self.n))
+        self.y = y.reshape((self.n, 1))
 
     def initq(self, qp):
         """Transform qp to spectral space and initialize q."""
@@ -85,11 +87,11 @@ class Model:
 
     def advection(self):
         """Perform RK4 step for advective terms (linear and nonlinear)."""
-        q1 = self.dt * self.advrhs(self.q)
-        q2 = self.dt * self.advrhs(self.q + q1/2)
-        q3 = self.dt * self.advrhs(self.q + q2/2)
-        q4 = self.dt * self.advrhs(self.q + q3)
-        self.q += (q1 + 2*q2 + 2*q3 + q4) / 6
+        q1 = self.advrhs(self.q)
+        q2 = self.advrhs(self.q + self.dt*q1/2)
+        q3 = self.advrhs(self.q + self.dt*q2/2)
+        q4 = self.advrhs(self.q + self.dt*q3)
+        self.q += self.dt*(q1 + 2*q2 + 2*q3 + q4)/6
 
     def diffusion(self):
         """Perform implicit (hyper- and hypo-) diffusion step."""
@@ -106,12 +108,12 @@ class Model:
             u q'_x + v q'_y + u' q_x + v' q_y + J(p', q')
         """
         p = self.invert(q)
-        rhs = np.empty([self.nz, self.n, self.n/2 + 1], dtype=complex)
-        for i in range(self.nz):
-            rhs[i,:,:] = \
-                - 1j * (self.k*self.u[i] + self.l*self.v[i]) * q[i,:,:] \
-                - 1j * (self.k*self.qy[i] - self.l*self.qx[i]) * p[i,:,:] \
-                - self.jacobian(p[i,:,:], q[i,:,:])
+        rhs = \
+            - 1j * (self.k*self.u[:,np.newaxis,np.newaxis]
+                + self.l*self.v[:,np.newaxis,np.newaxis]) * q \
+            - 1j * (self.k*self.qy[:,np.newaxis,np.newaxis]
+                - self.l*self.qx[:,np.newaxis,np.newaxis]) * p \
+            - self.jacobian(p, q)
         return rhs
 
     def jacobian(self, A, B):
@@ -130,16 +132,16 @@ class Model:
     def fft_truncate(self, up):
         """Perform forward FFT on physical field up and truncate (3/2 rule)."""
         us = fftw.interfaces.numpy_fft.rfft2(up, threads=self.threads)
-        u = np.zeros((self.n, self.n/2 + 1), dtype=complex)
-        u[: self.n/2, :] = us[: self.n/2, : self.n/2 + 1]
-        u[self.n/2 :, :] = us[self.n : 3*self.n/2, : self.n/2 + 1]
+        u = np.zeros((self.nz, self.n, self.n/2 + 1), dtype=complex)
+        u[:, : self.n/2, :] = us[:, : self.n/2, : self.n/2 + 1]
+        u[:, self.n/2 :, :] = us[:, self.n : 3*self.n/2, : self.n/2 + 1]
         return u/2.25  # accounting for normalization
 
     def ifft_pad(self, u):
         """Pad spectral field u (3/2 rule) and perform inverse FFT."""
-        us = np.zeros((3*self.n/2, 3*self.n/4 + 1), dtype=complex)
-        us[: self.n/2, : self.n/2 + 1] = u[: self.n/2, :]
-        us[self.n : 3*self.n/2, : self.n/2 + 1] = u[self.n/2 :, :]
+        us = np.zeros((self.nz, 3*self.n/2, 3*self.n/4 + 1), dtype=complex)
+        us[:, : self.n/2, : self.n/2 + 1] = u[:, : self.n/2, :]
+        us[:, self.n : 3*self.n/2, : self.n/2 + 1] = u[:, self.n/2 :, :]
         return fftw.interfaces.numpy_fft.irfft2(2.25*us, threads=self.threads)
 
     def doubleres(self):
@@ -150,7 +152,7 @@ class Model:
         qs[:, : self.n/4, : self.n/4 + 1] = self.q[:, : self.n/4, :]
         qs[:, 3*self.n/4 : self.n, : self.n/4 + 1] = self.q[:, self.n/4 :, :]
         # Account for normalization.
-        self.q = 4 * qs
+        self.q = 4*qs
         # Update grid.
         self.grid()
 
