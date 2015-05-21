@@ -246,7 +246,7 @@ class TwoLayer(Model):
 
     def invert(self, q):
         """Two-layer inversion."""
-        p = np.zeros([self.nz, self.n, self.n/2 + 1], dtype=complex)
+        p = np.zeros(q.shape, dtype=complex)
         kh = np.hypot(self.k, self.l)
         kh[0,0] = 1.  # prevent div. by zero
         p[0,:,:] = (self.kd**2 + 2 * kh**2) * q[0,:,:] + self.kd**2 * q[1,:,:]
@@ -282,7 +282,7 @@ class Eady(Model):
 
     def invert(self, q):
         """Eady inversion."""
-        p = np.zeros([self.nz, self.n, self.n/2 + 1], dtype=complex)
+        p = np.zeros(q.shape, dtype=complex)
         kh = np.hypot(self.k, self.l)
         kh[0,0] = 1.  # prevent div. by zero
         mu = self.N * kh * self.H / self.f
@@ -327,7 +327,7 @@ class FloatingEady(Model):
 
     def invert(self, q):
         """Floating Eady inversion."""
-        p = np.zeros([self.nz, self.n, self.n/2 + 1], dtype=complex)
+        p = np.zeros(q.shape, dtype=complex)
         kh = np.hypot(self.k, self.l)
         kh[0,0] = 1.  # prevent div. by zero
         mu = self.N[0] * kh * self.H / self.f
@@ -378,12 +378,11 @@ class TwoEady(Model):
 
     def invert(self, q):
         """Two-Eady inversion."""
-        p = np.zeros([self.nz, self.n, self.n/2 + 1], dtype=complex)
+        p = np.zeros(q.shape, dtype=complex)
         kh = np.hypot(self.k, self.l)
         kh[0,0] = 1.  # prevent div. by zero
-        mu = np.zeros([self.nz, self.n, self.n/2 + 1])
-        mu[0,:,:] = self.N[0] * kh * self.H[0] / self.f
-        mu[1,:,:] = self.N[1] * kh * self.H[1] / self.f
+        mu = self.N[:,np.newaxis,np.newaxis] * kh \
+            * self.H[:,np.newaxis,np.newaxis] / self.f
         p[0,:,:] = \
             (self.N[0]**2 + self.N[0] * self.N[1] / np.tanh(mu[0,:,:]) 
             / np.tanh(mu[1,:,:])) * q[0,:,:] \
