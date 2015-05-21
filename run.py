@@ -32,28 +32,22 @@ import model
 # model can be restarted with a reduced time step when it blows up (see
 # below).
 
-#folder = 'two-layer'
-#m = model.TwoLayer(5e5, 128, 5000.)
-#m.initmean(8e-5, 2.5e-2, 0., 0.)
-#m.initq(1e-7 * np.random.rand(2, 128, 128))
-#m.snapshot(folder)
-
 folder = 'eady'
 m = model.Eady(5e5, 128, 5000.)
-m.initmean(1e-4, 8e-3, 500., 1e-4, 0.)
-m.initq(1e-5 * np.random.rand(2, 128, 128))
+m.setup(1e-4, 8e-3, 500., 1e-4, 0.)
+m.initq(1e-5 * np.random.rand(128, 128, 2))
 m.snapshot(folder)
 
 #folder = 'fleady'
 #m = model.FloatingEady(5e5, 128, 5000.)
-#m.initmean(1e-4, [2e-3, 8e-3], 100., [1e-4, 1e-4], [0., 0.])
-#m.initq(1e-7 * np.random.rand(2, 128, 128))
+#m.setup(1e-4, [2e-3, 8e-3], 100., [1e-4, 1e-4], [0., 0.])
+#m.initq(1e-7 * np.random.rand(128, 128, 2))
 #m.snapshot(folder)
 
 #folder = 'two-eady'
 #m = model.TwoEady(5e5, 128, 5000.)
-#m.initmean(1e-4, [2e-3, 8e-3], [100., 400.], [1e-4, 1e-4], [0., 0.])
-#m.initq(1e-7 * np.random.rand(3, 128, 128))
+#m.setup(1e-4, [2e-3, 8e-3], [100., 400.], [1e-4, 1e-4], [0., 0.])
+#m.initq(1e-7 * np.random.rand(128, 128, 3))
 #m.snapshot(folder)
 
 # More setup: Here we define the hyper- and hypoviscosity.  In this
