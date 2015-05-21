@@ -58,17 +58,18 @@ class Model:
         self.diffexp = 2        # exponent of diffusion operator
         self.hypodiff = 0.      # hypodiffusion coefficient
         self.threads = 1        # number of threads for FFT
-        self.grid()             # set up grid
-        self.time = 0.          # initialize time
+        self.time = 0.          # initial simulation time
+        # Set up grid.
+        self.grid()
 
     def grid(self):
         """Set up spectral and physical grid."""
-        # spectral grid
+        # Set up spectral grid.
         k = abs(np.fft.fftfreq(self.n, d=self.a/(2*np.pi*self.n))[:self.n/2+1])
         l = np.fft.fftfreq(self.n, d=self.a/(2*np.pi*self.n))
         self.k = k[np.newaxis,:,np.newaxis]
         self.l = l[:,np.newaxis,np.newaxis]
-        # physical grid
+        # Set up physical grid.
         x = np.arange(self.n) * self.a / self.n
         y = np.arange(self.n) * self.a / self.n
         self.x = x[np.newaxis,:,np.newaxis]
@@ -78,7 +79,7 @@ class Model:
         """Transform qp to spectral space and initialize q."""
         self.q = fftw.interfaces.numpy_fft.rfft2(qp, axes=(0, 1),
             threads=self.threads)
-        self.q[:,0,0] = 0.  # ensure zero mean
+        self.q[:,0,0] = 0.  # ensuring zero mean
 
     def timestep(self):
         """Perform time step."""
@@ -97,7 +98,7 @@ class Model:
     def diffusion(self):
         """Perform implicit (hyper- and hypo-) diffusion step."""
         k2 = self.k**2 + self.l**2
-        k2[0,0,:] = 1.  # Prevent div. by zero.
+        k2[0,0,:] = 1.  # preventing div. by zero for wavenumber 0
         self.q *= np.exp(-self.nu * k2**(self.diffexp/2.) * self.dt)
         if self.hypodiff > 0:
             self.q *= np.exp(-self.hypodiff / k2 * self.dt)
@@ -108,9 +109,9 @@ class Model:
         Calculate mean-eddy and eddy-eddy advection terms:
             u q'_x + v q'_y + u' q_x + v' q_y + J(p', q')
         """
-        # inversion
+        # Perform inversion.
         p = np.linalg.solve(self.L, q)
-        # calculate RHS
+        # Calculate RHS.
         rhs = \
             - 1j * (self.k*self.u + self.l*self.v) * q \
             - 1j * (self.k*self.qy - self.l*self.qx) * p \
@@ -163,9 +164,9 @@ class Model:
 
     def screenlog(self):
         """Print model state info on screen."""
-        # time (in seconds)
+        # Write time (in seconds).
         sys.stdout.write(' {:15.0f}'.format(self.time))
-        # mean enstrophy for each layer
+        # Write mean enstrophy for each layer.
         for i in range(self.nz):
             sys.stdout.write(' {:5e}'.format(np.mean(np.abs(self.q[:,:,i])**2)
                 /self.n**2))
@@ -173,7 +174,7 @@ class Model:
 
     def snapshot(self, name):
         """Save snapshots of total q (mean added) for each level."""
-        # Check if directory exists.
+        # Check whether directory exists.
         if not os.path.isdir(name + '/snapshots'):
             os.makedirs(name + '/snapshots')
         # Transform to physical space.
@@ -182,7 +183,7 @@ class Model:
         # Add mean gradients
         qp += self.qx * (self.x - self.a / 2)
         qp += self.qy * (self.y - self.a / 2)
-        # Range of colorbars.
+        # Determine range of colorbars.
         m = np.max([np.abs(self.qx * self.a), np.abs(self.qy * self.a)], axis=0)
         # Save image for each layer.
         for i in range(self.nz):
@@ -192,7 +193,7 @@ class Model:
 
     def save(self, name):
         """Save model state."""
-        # Check if directory exists.
+        # Check whether directory exists.
         if not os.path.isdir(name + '/data'):
             os.makedirs(name + '/data')
         # Save.
@@ -219,13 +220,13 @@ class TwoDim(Model):
 
     def setup(self):
         """Initialize the mean state and the inversion matrix."""
-        # inversion matrix
+        # Initialize inversion matrix.
         self.invmatrix()
 
     def invmatrix(self):
         """Initialize the inversion matrix L."""
         k2 = (self.k**2 + self.l**2)[:,:,0]
-        k2[0,0] = 1.  # prevent singular inversion for wavenumber 0
+        k2[0,0] = 1.  # preventing singular inversion for wavenumber 0
         self.L = np.empty((self.n, self.n/2 + 1, 1, 1))
         self.L[:,:,0,0] = - k2
 
@@ -246,20 +247,20 @@ class TwoLayer(Model):
 
     def setup(self, kd, u, v, beta):
         """Initialize the mean state and the inversion matrix."""
-        self.kd = kd  # Deformation wavenumber.
-        # mean flow (zero in lower layer)
+        self.kd = kd  # deformation wavenumber
+        # Initialize mean mean flow (zero in lower layer).
         self.u[0] = u
         self.v[0] = v
-        # mean PV gradients
+        # Initialize mean PV gradients.
         self.qx = np.array([- kd**2 * v / 2, + kd**2 * v / 2])
         self.qy = np.array([beta + kd**2 * u / 2, beta - kd**2 * u / 2])
-        # inversion matrix
+        # Initialize inversion matrix.
         self.invmatrix()
 
     def invmatrix(self):
         """Initialize the inversion matrix L."""
         k2 = (self.k**2 + self.l**2)[:,:,0]
-        k2[0,0] = 1.  # prevent div. by zero for wavenumber 0
+        k2[0,0] = 1.  # preventing div. by zero for wavenumber 0
         self.L = np.empty((self.n, self.n/2 + 1, 2, 2))
         self.L[:,:,0,0] = - k2 - self.kd**2 / 2
         self.L[:,:,0,1] = + self.kd**2 / 2
@@ -286,19 +287,19 @@ class Eady(Model):
         self.f = f  # Coriolis parameter
         self.N = N  # buoyancy frequency
         self.H = H  # depth
-        # mean flow
+        # Initialize mean flow.
         self.u = np.array([0, - Sx * H])
         self.v = np.array([0, - Sy * H])
-        # mean PV gradients
+        # Initialize mean PV gradients.
         self.qx = np.array([- f**2 * Sy / N**2, + f**2 * Sy / N**2])
         self.qy = np.array([+ f**2 * Sx / N**2, - f**2 * Sx / N**2])
-        # inversion matrix
+        # Initialize inversion matrix.
         self.invmatrix()
 
     def invmatrix(self):
         """Initialize the inversion matrix L."""
         kh = np.hypot(self.k, self.l)[:,:,0]
-        kh[0,0] = 1.  # prevent div. by zero for wavenumber 0
+        kh[0,0] = 1.  # preventing div. by zero for wavenumber 0
         mu = self.N * kh * self.H / self.f
         self.L = np.empty((self.n, self.n/2 + 1, 2, 2))
         self.L[:,:,0,0] = - self.f * kh / (self.N * np.tanh(mu))
@@ -330,23 +331,23 @@ class FloatingEady(Model):
         self.f = f            # Coriolis parameter
         self.N = np.array(N)  # buoyancy frequencies of the two layers
         self.H = H            # depth of upper layer
-        # mean flow
+        # Initialize mean flow.
         self.u = np.array([0, - Sx[0] * H])
         self.v = np.array([0, - Sy[0] * H])
-        # mean PV gradients
+        # Initialize mean PV gradients.
         self.qx = np.array([
             - f**2 * Sy[0] / N[0]**2,
             + f**2 * (Sy[0] / N[0]**2 - Sy[1] / N[1]**2)])
         self.qy = np.array([
             + f**2 * Sx[0] / N[0]**2,
             - f**2 * (Sx[0] / N[0]**2 - Sx[1] / N[1]**2)])
-        # inversion matrix
+        # Initialize inversion matrix.
         self.invmatrix()
 
     def invmatrix(self):
         """Initialize the inversion matrix L."""
         kh = np.hypot(self.k, self.l)[:,:,0]
-        kh[0,0] = 1.  # prevent div. by zero for wavenumber 0
+        kh[0,0] = 1.  # preventing div. by zero for wavenumber 0
         mu = self.N[0] * kh * self.H / self.f
         self.L = np.empty((self.n, self.n/2 + 1, 2, 2))
         self.L[:,:,0,0] = - self.f * kh / (self.N[0] * np.tanh(mu))
@@ -380,10 +381,10 @@ class TwoEady(Model):
         self.f = f            # Coriolis parameter
         self.N = np.array(N)  # buoyancy frequencies of the two layers
         self.H = np.array(H)  # depths of the two layers
-        # mean flow
+        # Initialize mean flow.
         self.u = np.array([0, - Sx[0] * H[0], - Sx[0] * H[0] - Sx[1] * H[1]])
         self.v = np.array([0, - Sy[0] * H[0], - Sy[0] * H[0] - Sy[1] * H[1]])
-        # mean PV gradients
+        # Initialize mean PV gradients.
         self.qx = np.array([
             - f**2 * Sy[0] / N[0]**2,
             + f**2 * (Sy[0] / N[0]**2 - Sy[1] / N[1]**2),
@@ -392,13 +393,13 @@ class TwoEady(Model):
             + f**2 * Sx[0] / N[0]**2,
             - f**2 * (Sx[0] / N[0]**2 - Sx[1] / N[1]**2),
             - f**2 * Sx[1] / N[1]**2])
-        # inversion matrix
+        # Initialize inversion matrix.
         self.invmatrix()
 
     def invmatrix(self):
         """Initialize the inversion matrix L."""
         kh = np.hypot(self.k, self.l)
-        kh[0,0] = 1.  # prevent div. by zero for wavenumber 0
+        kh[0,0] = 1.  # preventing div. by zero for wavenumber 0
         mu = self.N * kh * self.H / self.f
         kh = kh[:,:,0]
         self.L = np.zeros((self.n, self.n/2 + 1, 3, 3))
