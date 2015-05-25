@@ -46,21 +46,12 @@ class Model:
     flow and gradients in the conserved quantities can be prescribed.
     """
 
-    def __init__(self, a, n, nz, dt):
-        self.a = a              # domain size
-        self.n = n              # number of Fourier modes per direction
+    def __init__(self, nz):
         self.nz = nz            # number of levels
-        self.dt = dt            # time step
         self.u = np.zeros(nz)   # mean zonal velocities
         self.v = np.zeros(nz)   # mean meridional velocities
         self.qx = np.zeros(nz)  # mean zonal PV gradient
         self.qy = np.zeros(nz)  # mean meridional PV gradient
-        self.diffexp = 2        # exponent of diffusion operator
-        self.hypodiff = 0.      # hypodiffusion coefficient
-        self.threads = 1        # number of threads for FFT
-        self.time = 0.          # initial simulation time
-        # Set up grid.
-        self.grid()
 
     def linstab(self, k, l):
         """Perform linear stability analysis for wavenumbers k and l.
@@ -86,6 +77,20 @@ class Model:
         # Sort eigenvalues.
         s.sort()
         return s
+
+    def initnum(self, a, n, dt):
+        """Initialize numerics."""
+        self.a = a              # domain size
+        self.n = n              # number of Fourier modes per direction
+        self.dt = dt            # time step
+        self.diffexp = 2        # exponent of diffusion operator
+        self.hypodiff = 0.      # hypodiffusion coefficient
+        self.threads = 1        # number of threads for FFT
+        self.time = 0.          # initial simulation time
+        # Set up grid.
+        self.grid()
+        # Initialize inversion matrix.
+        self.L = self.invmatrix(self.k, self.l)
 
     def grid(self):
         """Set up spectral and physical grid."""
@@ -240,16 +245,14 @@ class TwoDim(Model):
     vation.  The inversion relation is simply a Poisson equation.
     """
 
-    def __init__(self, L, n, dt):
-        Model.__init__(self, L, n, 1, dt)
+    def __init__(self):
+        Model.__init__(self, 1)
 
-    def setup(self, qx, qy):
-        """Initialize the mean state and the inversion matrix."""
+    def initmean(self, qx, qy):
+        """Initialize the mean state."""
         # Set up PV gradients.
         self.qx[0] = qx
         self.qy[0] = qy
-        # Initialize inversion matrix.
-        self.L = self.invmatrix(self.k, self.l)
 
     def invmatrix(self, k, l):
         """Initialize the inversion matrix L."""
@@ -271,11 +274,11 @@ class TwoLayer(Model):
     1995).
     """
 
-    def __init__(self, L, n, dt):
-        Model.__init__(self, L, n, 2, dt)
+    def __init__(self):
+        Model.__init__(self, 2)
 
-    def setup(self, kd, u, v, beta):
-        """Initialize the mean state and the inversion matrix."""
+    def initmean(self, kd, u, v, beta):
+        """Initialize the mean state."""
         self.kd = kd  # deformation wavenumber
         # Initialize mean mean flow (zero in lower layer).
         self.u[0] = u
@@ -283,8 +286,6 @@ class TwoLayer(Model):
         # Initialize mean PV gradients.
         self.qx = np.array([- kd**2 * v / 2, + kd**2 * v / 2])
         self.qy = np.array([beta + kd**2 * u / 2, beta - kd**2 * u / 2])
-        # Initialize inversion matrix.
-        self.L = self.invmatrix(self.k, self.l)
 
     def invmatrix(self, k, l):
         """Initialize the inversion matrix L."""
@@ -309,11 +310,11 @@ class Eady(Model):
       q[1] = + f b(-H) / N^2.
     """
 
-    def __init__(self, L, n, dt):
-        Model.__init__(self, L, n, 2, dt)
+    def __init__(self):
+        Model.__init__(self, 2)
 
-    def setup(self, f, N, H, Sx, Sy):
-        """Initialize the mean state and the inversion matrix."""
+    def initmean(self, f, N, H, Sx, Sy):
+        """Initialize the mean state."""
         self.f = f  # Coriolis parameter
         self.N = N  # buoyancy frequency
         self.H = H  # depth
@@ -323,8 +324,6 @@ class Eady(Model):
         # Initialize mean PV gradients.
         self.qx = np.array([- f**2 * Sy / N**2, + f**2 * Sy / N**2])
         self.qy = np.array([+ f**2 * Sx / N**2, - f**2 * Sx / N**2])
-        # Initialize inversion matrix.
-        self.L = self.invmatrix(self.k, self.l)
 
     def invmatrix(self, k, l):
         """Initialize the inversion matrix L."""
@@ -354,11 +353,11 @@ class FloatingEady(Model):
     layers, respectively.
     """
 
-    def __init__(self, L, n, dt):
-        Model.__init__(self, L, n, 2, dt)
+    def __init__(self):
+        Model.__init__(self, 2)
 
-    def setup(self, f, N, H, Sx, Sy):
-        """Initialize the mean state and the inversion matrix."""
+    def initmean(self, f, N, H, Sx, Sy):
+        """Initialize the mean state."""
         self.f = f            # Coriolis parameter
         self.N = np.array(N)  # buoyancy frequencies of the two layers
         self.H = H            # depth of upper layer
@@ -372,8 +371,6 @@ class FloatingEady(Model):
         self.qy = np.array([
             + f**2 * Sx[0] / N[0]**2,
             - f**2 * (Sx[0] / N[0]**2 - Sx[1] / N[1]**2)])
-        # Initialize inversion matrix.
-        self.L = self.invmatrix(self.k, self.l)
 
     def invmatrix(self, k, l):
         """Initialize the inversion matrix L."""
@@ -405,11 +402,11 @@ class TwoEady(Model):
     and H[1] are their depths.
     """
 
-    def __init__(self, L, n, dt):
-        Model.__init__(self, L, n, 3, dt)
+    def __init__(self):
+        Model.__init__(self, 3)
 
-    def setup(self, f, N, H, Sx, Sy):
-        """Initialize the mean state and inversion matrix."""
+    def initmean(self, f, N, H, Sx, Sy):
+        """Initialize the mean state."""
         self.f = f            # Coriolis parameter
         self.N = np.array(N)  # buoyancy frequencies of the two layers
         self.H = np.array(H)  # depths of the two layers
@@ -425,8 +422,6 @@ class TwoEady(Model):
             + f**2 * Sx[0] / N[0]**2,
             - f**2 * (Sx[0] / N[0]**2 - Sx[1] / N[1]**2),
             - f**2 * Sx[1] / N[1]**2])
-        # Initialize inversion matrix.
-        self.L = self.invmatrix(self.k, self.l)
 
     def invmatrix(self, k, l):
         """Initialize the inversion matrix L."""

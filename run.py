@@ -22,49 +22,38 @@ import matplotlib.pyplot as plt
 import model
 
 
-# Initialization: initialize model of required type, set up mean state,
-# set up initial state, and save initial snapshot.  Given here are three
-# examples, all taken from Callies, Flierl, Ferrari, Fox-Kemper (2015).
-# These are low-resolution versions of the simulations in the paper.
-# For the second and third case, the resolution is insufficient to re-
-# solve the instabilities properly.  These low-resolution models can be
-# used to spin up higher-resolution versions (see below).  The time step
-# chosen here may be too large for the fully turbulent regime.  The
-# model can be restarted with a reduced time step when it blows up (see
-# below).
+# Initialization: initialize model of required type and set up mean
+# state.  Given here are five examples, the latter three described in
+# Callies, Flierl, Ferrari, Fox-Kemper (2015).  These are low-
+# resolution versions of the simulations in the paper.  For the floating
+# Eady and two-Eady case, the resolution is insufficient to resolve the
+# instabilities properly.  These low-resolution models can be used to
+# spin up higher-resolution versions (see below).  The time step chosen
+# here may be too large for the fully turbulent regime.  The model can
+# be restarted with a reduced time step when it blows up (see below).
 
 #folder = 'two-dim'
-#m = model.TwoDim(5e5, 128, 5000.)
-#m.setup(0, 2e-11)
-#m.initq(1e-5 * np.random.rand(128, 128, 1))
-#m.snapshot(folder)
+#m = model.TwoDim()
+#m.initmean(0, 2e-11)
 
 #folder = 'two-layer'
-#m = model.TwoLayer(5e5, 128, 5000.)
-#m.setup(8e-5, 2.5e-2, 0., 0.)
-#m.initq(1e-7 * np.random.rand(128, 128, 2))
-#m.snapshot(folder)
+#m = model.TwoLayer()
+#m.initmean(8e-5, 2.5e-2, 0., 0.)
 
 folder = 'eady'
-m = model.Eady(5e5, 128, 5000.)
-m.setup(1e-4, 8e-3, 500., 1e-4, 0.)
-m.initq(1e-5 * np.random.rand(128, 128, 2))
-m.snapshot(folder)
+m = model.Eady()
+m.initmean(1e-4, 8e-3, 500., 1e-4, 0.)
 
 #folder = 'fleady'
-#m = model.FloatingEady(5e5, 128, 5000.)
-#m.setup(1e-4, [2e-3, 8e-3], 100., [1e-4, 1e-4], [0., 0.])
-#m.initq(1e-7 * np.random.rand(128, 128, 2))
-#m.snapshot(folder)
+#m = model.FloatingEady()
+#m.initmean(1e-4, [2e-3, 8e-3], 100., [1e-4, 1e-4], [0., 0.])
 
 #folder = 'two-eady'
-#m = model.TwoEady(5e5, 128, 5000.)
-#m.setup(1e-4, [2e-3, 8e-3], [100., 400.], [1e-4, 1e-4], [0., 0.])
-#m.initq(1e-7 * np.random.rand(128, 128, 3))
-#m.snapshot(folder)
+#m = model.TwoEady()
+#m.initmean(1e-4, [2e-3, 8e-3], [100., 400.], [1e-4, 1e-4], [0., 0.])
 
 # Perform linear stability analysis.  This is an example of how to
-# calculate the linear growth rates and phase speeds for a set of
+# calculate the linear phase speeds and growth rates for a set of
 # specified wavenumbers k and l for the model set up above.
 
 k = 2 * np.pi * np.logspace(-6, -3, 500)
@@ -79,10 +68,16 @@ ax[1].set_ylabel('growth rate')
 ax[1].set_xlabel('inverse wavelength')
 plt.show()
 
-# More setup: Here we define the hyper- and hypoviscosity.  In this
-# case, high-order hyperviscosity is used, with a coefficient that is
-# adopted from Callies et al. (2015) to account for the the reduced
-# resolution.
+# Set up the numerics: Here we initialize the numerics, specifying
+# domain size, resolution and time step.  Note that initnum must always
+# be called after initmean has been used to set up the mean state and
+# model parameters, because these are used in setting up the inversion.
+# We also define the hyper- and hypoviscosity.  In this case, high-order
+# hyperviscosity is used, with a coefficient that is modified from
+# Callies et al. (2015) to account for the the reduced resolution.
+
+m.initnum(5e5, 128, 5000.)
+m.initq(1e-5 * np.random.rand(128, 128, m.nz))
 
 m.nu = 2.5e46 * 4.**20
 m.diffexp = 20
@@ -110,6 +105,8 @@ m.hypodiff = 1e-16
 # Step model forward: This is the main loop of the model.  It steps
 # forward the model, prints information on the model state, and episo-
 # dically saves the model state to file and a snapshot as a png-file.
+
+m.snapshot(folder)
 
 for i in range(20000):
     m.timestep()
