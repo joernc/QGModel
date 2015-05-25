@@ -81,13 +81,13 @@ plt.show()
 # hyperviscosity is used, with a coefficient that is modified from
 # Callies et al. (2015) to account for the the reduced resolution.
 
-#m.initnum(5e5, 128, 5000.)
-#m.initq(1e-5 * np.random.rand(128, 128, m.nz))
-#m.snapshot(folder)
-#
-#m.nu = 2.5e46 * 4.**20
-#m.diffexp = 20
-#m.hypodiff = 1e-16
+m.initnum(5e5, 128, 5000.)
+m.initq(1e-5 * np.random.rand(128, 128, m.nz))
+m.snapshot(folder)
+
+m.nu = 2.5e46 * 4.**20
+m.diffexp = 20
+m.hypodiff = 1e-16
 
 # Load model state: This simple command allows one to restart the model
 # from a previously saved state.  All that is necessary is the folder
@@ -115,6 +115,6 @@ plt.show()
 for i in range(20000):
     m.timestep()
     m.screenlog()
-    if np.mod(m.time, 250000) == 0:
+    if m.time % 250000. == 0:
         m.save(folder)
         m.snapshot(folder)
