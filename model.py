@@ -439,3 +439,68 @@ class TwoEady(Model):
         L[:,:,2,1] = + self.f * kh / (self.N[1] * np.sinh(mu[:,:,1]))
         L[:,:,2,2] = - self.f * kh / (self.N[1] * np.tanh(mu[:,:,1]))
         return L
+
+
+class TwoEadyJump(Model):
+
+    """Two-Eady model with jump
+
+    This is a two-Eady model with an additional buoyancy and velocity jump
+    at the interface.  The model then has an additional conserved quantity,
+    as if there was an additional layer at the interface.  (The jump can be
+    thought of as an additional, infinitesimally thin layer with infinite
+    stratification and shear.)  The conserved quantities are now
+      q[0] = - f b(0) / N[0]^2,
+      q[1] = + f b^+(-H[0]) / N[0]^2 + f \eta,
+      q[1] = - f b^-(-H[0]) / N[1]^2 - f \eta,
+      q[0] = + f b(-H[0]-H[1]) / N[1]^2,
+    where \eta is the interface displacement.  The buoyancy jump g' and
+    velocity jump (U, V) can be passed to initmean.  
+    """
+
+    def __init__(self):
+        Model.__init__(self, 4)
+
+    def initmean(self, f, N, H, g, Sx, Sy, U, V):
+        """Initialize the mean state."""
+        self.f = f            # Coriolis parameter
+        self.N = np.array(N)  # buoyancy frequencies of the two layers
+        self.H = np.array(H)  # depths of the two layers
+        self.g = g            # buoyancy jump at interface
+        # Initialize mean flow.
+        self.u = np.array([0, - Sx[0] * H[0], - Sx[0] * H[0] - U,
+            - Sx[0] * H[0] - U - Sx[1] * H[1]])
+        self.v = np.array([0, - Sy[0] * H[0], - Sy[0] * H[0] - V,
+            - Sy[0] * H[0] - V - Sy[1] * H[1]])
+        # Initialize mean PV gradients (no slope allowed yet).
+        self.qx = np.array([
+            - f**2 * Sy[0] / N[0]**2,
+            + f**2 * Sy[0] / N[0]**2 - f**2 * V / g,
+            - f**2 * Sy[1] / N[1]**2 + f**2 * V / g,
+            + f**2 * Sy[1] / N[1]**2])
+        self.qy = np.array([
+            + f**2 * Sx[0] / N[0]**2,
+            - f**2 * Sx[0] / N[0]**2 + f**2 * U / g,
+            + f**2 * Sx[1] / N[1]**2 - f**2 * U / g,
+            - f**2 * Sx[1] / N[1]**2])
+
+    def invmatrix(self, k, l):
+        """Initialize the inversion matrix L."""
+        kh = np.hypot(k, l)
+        kh[kh == 0.] = 1.  # preventing div. by zero for wavenumber 0
+        mu = self.N * kh * self.H / self.f
+        kh = kh[:,:,0]
+        L = np.zeros((l.size, k.size, 4, 4))
+        L[:,:,0,0] = - self.f * kh / (self.N[0] * np.tanh(mu[:,:,0]))
+        L[:,:,0,1] = + self.f * kh / (self.N[0] * np.sinh(mu[:,:,0]))
+        L[:,:,1,0] = + self.f * kh / (self.N[0] * np.sinh(mu[:,:,0]))
+        L[:,:,1,1] = - self.f * kh / (self.N[0] * np.tanh(mu[:,:,0])) \
+            - self.f**2 / self.g
+        L[:,:,1,2] = self.f**2 / self.g
+        L[:,:,2,1] = self.f**2 / self.g
+        L[:,:,2,2] = - self.f * kh / (self.N[1] * np.tanh(mu[:,:,1])) \
+            - self.f**2 / self.g
+        L[:,:,2,3] = + self.f * kh / (self.N[1] * np.sinh(mu[:,:,1]))
+        L[:,:,3,2] = + self.f * kh / (self.N[1] * np.sinh(mu[:,:,1]))
+        L[:,:,3,3] = - self.f * kh / (self.N[1] * np.tanh(mu[:,:,1]))
+        return L

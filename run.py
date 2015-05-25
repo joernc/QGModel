@@ -52,6 +52,11 @@ m.initmean(1e-4, 8e-3, 500., 1e-4, 0.)
 #m = model.TwoEady()
 #m.initmean(1e-4, [2e-3, 8e-3], [100., 400.], [1e-4, 1e-4], [0., 0.])
 
+#folder = 'two-eady-jump'
+#m = model.TwoEadyJump()
+#m.initmean(1e-4, [2e-3, 8e-3], [100., 400.], 4e-3, [1e-4, 1e-4], [0., 0.],
+#    2e-2, 0)
+
 # Perform linear stability analysis.  This is an example of how to
 # calculate the linear phase speeds and growth rates for a set of
 # specified wavenumbers k and l for the model set up above.
@@ -76,12 +81,13 @@ plt.show()
 # hyperviscosity is used, with a coefficient that is modified from
 # Callies et al. (2015) to account for the the reduced resolution.
 
-m.initnum(5e5, 128, 5000.)
-m.initq(1e-5 * np.random.rand(128, 128, m.nz))
-
-m.nu = 2.5e46 * 4.**20
-m.diffexp = 20
-m.hypodiff = 1e-16
+#m.initnum(5e5, 128, 5000.)
+#m.initq(1e-5 * np.random.rand(128, 128, m.nz))
+#m.snapshot(folder)
+#
+#m.nu = 2.5e46 * 4.**20
+#m.diffexp = 20
+#m.hypodiff = 1e-16
 
 # Load model state: This simple command allows one to restart the model
 # from a previously saved state.  All that is necessary is the folder
@@ -105,8 +111,6 @@ m.hypodiff = 1e-16
 # Step model forward: This is the main loop of the model.  It steps
 # forward the model, prints information on the model state, and episo-
 # dically saves the model state to file and a snapshot as a png-file.
-
-m.snapshot(folder)
 
 for i in range(20000):
     m.timestep()
