@@ -63,21 +63,29 @@ class Model:
         self.grid()
 
     def linstab(self, k, l):
-        """Perform linear stability analysis for wavenumbers k and l."""
+        """Perform linear stability analysis for wavenumbers k and l.
+        
+        Returns complex \omega.
+        """
         # Set up inversion matrix with specified wavenumbers.
         L = self.invmatrix(k[np.newaxis,:,np.newaxis],
             l[:,np.newaxis,np.newaxis])
         # Set up mean flow matrix.
         U = np.diag(self.u)
+        V = np.diag(self.v)
         # Set up mean gradients matrix.
-        G = np.diag(self.qy)
-        # Compute G L^-1.
-        GL = np.einsum('kl,ijlm', G, np.linalg.inv(L))
+        Gx = np.diag(self.qx)
+        Gy = np.diag(self.qy)
+        # Allow proper broadcasting over matrices.
+        kk = k[np.newaxis,:,np.newaxis,np.newaxis]
+        ll = l[:,np.newaxis,np.newaxis,np.newaxis]
+        # Compute (k Gy - l Gx) L^-1.
+        GL = np.einsum('...ij,...jk->...ik', kk*Gy - ll*Gx, np.linalg.inv(L))
         # Solve eigenvalue problem.
-        c, v = np.linalg.eig(U + GL)
+        s, v = np.linalg.eig(kk*U + ll*V + GL)
         # Sort eigenvalues.
-        c.sort()
-        return c
+        s.sort()
+        return s
 
     def grid(self):
         """Set up spectral and physical grid."""
