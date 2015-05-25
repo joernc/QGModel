@@ -17,6 +17,7 @@
 
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 import model
 
@@ -32,11 +33,23 @@ import model
 # model can be restarted with a reduced time step when it blows up (see
 # below).
 
-folder = 'eady'
-m = model.Eady(5e5, 128, 5000.)
-m.setup(1e-4, 8e-3, 500., 1e-4, 0.)
-m.initq(1e-5 * np.random.rand(128, 128, 2))
+folder = 'two-dim'
+m = model.TwoDim(5e5, 128, 5000.)
+m.setup(0, 2e-11)
+m.initq(1e-5 * np.random.rand(128, 128, 1))
 m.snapshot(folder)
+
+#folder = 'two-layer'
+#m = model.TwoLayer(5e5, 128, 5000.)
+#m.setup(8e-5, 2.5e-2, 0., 0.)
+#m.initq(1e-7 * np.random.rand(128, 128, 2))
+#m.snapshot(folder)
+
+#folder = 'eady'
+#m = model.Eady(5e5, 128, 5000.)
+#m.setup(1e-4, 8e-3, 500., 1e-4, 0.)
+#m.initq(1e-5 * np.random.rand(128, 128, 2))
+#m.snapshot(folder)
 
 #folder = 'fleady'
 #m = model.FloatingEady(5e5, 128, 5000.)
@@ -49,6 +62,22 @@ m.snapshot(folder)
 #m.setup(1e-4, [2e-3, 8e-3], [100., 400.], [1e-4, 1e-4], [0., 0.])
 #m.initq(1e-7 * np.random.rand(128, 128, 3))
 #m.snapshot(folder)
+
+# Perform linear stability analysis.  This is an example of how to
+# calculate the linear growth rates and phase speeds for a set of
+# specified wavenumbers k and l for the model set up above.
+
+k = 2 * np.pi * np.logspace(-6, -3, 500)
+l = np.zeros(1)
+c = m.linstab(k, l)
+
+fig, ax = plt.subplots(2, 1, sharex=True)
+ax[0].semilogx(k / (2*np.pi), np.real(c[0,:,:]))
+ax[1].semilogx(k / (2*np.pi), k[:,np.newaxis] * np.imag(c[0,:,:]))
+ax[0].set_ylabel('phase speed')
+ax[1].set_ylabel('growth rate')
+ax[1].set_xlabel('inverse wavelength')
+plt.show()
 
 # More setup: Here we define the hyper- and hypoviscosity.  In this
 # case, high-order hyperviscosity is used, with a coefficient that is

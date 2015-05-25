@@ -62,6 +62,23 @@ class Model:
         # Set up grid.
         self.grid()
 
+    def linstab(self, k, l):
+        """Perform linear stability analysis for wavenumbers k and l."""
+        # Set up inversion matrix with specified wavenumbers.
+        L = self.invmatrix(k[np.newaxis,:,np.newaxis],
+            l[:,np.newaxis,np.newaxis])
+        # Set up mean flow matrix.
+        U = np.diag(self.u)
+        # Set up mean gradients matrix.
+        G = np.diag(self.qy)
+        # Compute G L^-1.
+        GL = np.einsum('kl,ijlm', G, np.linalg.inv(L))
+        # Solve eigenvalue problem.
+        c, v = np.linalg.eig(U + GL)
+        # Sort eigenvalues.
+        c.sort()
+        return c
+
     def grid(self):
         """Set up spectral and physical grid."""
         # Set up spectral grid.
@@ -160,7 +177,7 @@ class Model:
         # Update grid.
         self.grid()
         # Update inversion matrix.
-        self.invmatrix()
+        self.L = self.invmatrix(self.k, self.l)
 
     def screenlog(self):
         """Print model state info on screen."""
@@ -218,17 +235,21 @@ class TwoDim(Model):
     def __init__(self, L, n, dt):
         Model.__init__(self, L, n, 1, dt)
 
-    def setup(self):
+    def setup(self, qx, qy):
         """Initialize the mean state and the inversion matrix."""
+        # Set up PV gradients.
+        self.qx[0] = qx
+        self.qy[0] = qy
         # Initialize inversion matrix.
-        self.invmatrix()
+        self.L = self.invmatrix(self.k, self.l)
 
-    def invmatrix(self):
+    def invmatrix(self, k, l):
         """Initialize the inversion matrix L."""
-        k2 = (self.k**2 + self.l**2)[:,:,0]
-        k2[0,0] = 1.  # preventing singular inversion for wavenumber 0
-        self.L = np.empty((self.n, self.n/2 + 1, 1, 1))
-        self.L[:,:,0,0] = - k2
+        k2 = (k**2 + l**2)[:,:,0]
+        k2[k2 == 0.] = 1.  # preventing div. by zero for wavenumber 0
+        L = np.empty((l.size, k.size, 1, 1))
+        L[:,:,0,0] = - k2
+        return L
 
 
 class TwoLayer(Model):
@@ -255,17 +276,18 @@ class TwoLayer(Model):
         self.qx = np.array([- kd**2 * v / 2, + kd**2 * v / 2])
         self.qy = np.array([beta + kd**2 * u / 2, beta - kd**2 * u / 2])
         # Initialize inversion matrix.
-        self.invmatrix()
+        self.L = self.invmatrix(self.k, self.l)
 
-    def invmatrix(self):
+    def invmatrix(self, k, l):
         """Initialize the inversion matrix L."""
-        k2 = (self.k**2 + self.l**2)[:,:,0]
-        k2[0,0] = 1.  # preventing div. by zero for wavenumber 0
-        self.L = np.empty((self.n, self.n/2 + 1, 2, 2))
-        self.L[:,:,0,0] = - k2 - self.kd**2 / 2
-        self.L[:,:,0,1] = + self.kd**2 / 2
-        self.L[:,:,1,0] = + self.kd**2 / 2
-        self.L[:,:,1,1] = - k2 - self.kd**2 / 2
+        k2 = (k**2 + l**2)[:,:,0]
+        k2[k2 == 0.] = 1.  # preventing div. by zero for wavenumber 0
+        L = np.empty((l.size, k.size, 2, 2))
+        L[:,:,0,0] = - k2 - self.kd**2 / 2
+        L[:,:,0,1] = + self.kd**2 / 2
+        L[:,:,1,0] = + self.kd**2 / 2
+        L[:,:,1,1] = - k2 - self.kd**2 / 2
+        return L
 
 
 class Eady(Model):
@@ -294,18 +316,19 @@ class Eady(Model):
         self.qx = np.array([- f**2 * Sy / N**2, + f**2 * Sy / N**2])
         self.qy = np.array([+ f**2 * Sx / N**2, - f**2 * Sx / N**2])
         # Initialize inversion matrix.
-        self.invmatrix()
+        self.L = self.invmatrix(self.k, self.l)
 
-    def invmatrix(self):
+    def invmatrix(self, k, l):
         """Initialize the inversion matrix L."""
-        kh = np.hypot(self.k, self.l)[:,:,0]
-        kh[0,0] = 1.  # preventing div. by zero for wavenumber 0
+        kh = np.hypot(k, l)[:,:,0]
+        kh[kh == 0.] = 1.  # preventing div. by zero for wavenumber 0
         mu = self.N * kh * self.H / self.f
-        self.L = np.empty((self.n, self.n/2 + 1, 2, 2))
-        self.L[:,:,0,0] = - self.f * kh / (self.N * np.tanh(mu))
-        self.L[:,:,0,1] = + self.f * kh / (self.N * np.sinh(mu))
-        self.L[:,:,1,0] = + self.f * kh / (self.N * np.sinh(mu))
-        self.L[:,:,1,1] = - self.f * kh / (self.N * np.tanh(mu))
+        L = np.empty((l.size, k.size, 2, 2))
+        L[:,:,0,0] = - self.f * kh / (self.N * np.tanh(mu))
+        L[:,:,0,1] = + self.f * kh / (self.N * np.sinh(mu))
+        L[:,:,1,0] = + self.f * kh / (self.N * np.sinh(mu))
+        L[:,:,1,1] = - self.f * kh / (self.N * np.tanh(mu))
+        return L
 
 
 class FloatingEady(Model):
@@ -342,19 +365,20 @@ class FloatingEady(Model):
             + f**2 * Sx[0] / N[0]**2,
             - f**2 * (Sx[0] / N[0]**2 - Sx[1] / N[1]**2)])
         # Initialize inversion matrix.
-        self.invmatrix()
+        self.L = self.invmatrix(self.k, self.l)
 
-    def invmatrix(self):
+    def invmatrix(self, k, l):
         """Initialize the inversion matrix L."""
-        kh = np.hypot(self.k, self.l)[:,:,0]
-        kh[0,0] = 1.  # preventing div. by zero for wavenumber 0
+        kh = np.hypot(k, l)[:,:,0]
+        kh[kh == 0.] = 1.  # preventing div. by zero for wavenumber 0
         mu = self.N[0] * kh * self.H / self.f
-        self.L = np.empty((self.n, self.n/2 + 1, 2, 2))
-        self.L[:,:,0,0] = - self.f * kh / (self.N[0] * np.tanh(mu))
-        self.L[:,:,0,1] = + self.f * kh / (self.N[0] * np.sinh(mu))
-        self.L[:,:,1,0] = + self.f * kh / (self.N[0] * np.sinh(mu))
-        self.L[:,:,1,1] = - self.f * kh / (self.N[0] * np.tanh(mu)) \
+        L = np.empty((l.size, k.size, 2, 2))
+        L[:,:,0,0] = - self.f * kh / (self.N[0] * np.tanh(mu))
+        L[:,:,0,1] = + self.f * kh / (self.N[0] * np.sinh(mu))
+        L[:,:,1,0] = + self.f * kh / (self.N[0] * np.sinh(mu))
+        L[:,:,1,1] = - self.f * kh / (self.N[0] * np.tanh(mu)) \
             - self.f * kh / self.N[1]
+        return L
 
 
 class TwoEady(Model):
@@ -394,20 +418,21 @@ class TwoEady(Model):
             - f**2 * (Sx[0] / N[0]**2 - Sx[1] / N[1]**2),
             - f**2 * Sx[1] / N[1]**2])
         # Initialize inversion matrix.
-        self.invmatrix()
+        self.L = self.invmatrix(self.k, self.l)
 
-    def invmatrix(self):
+    def invmatrix(self, k, l):
         """Initialize the inversion matrix L."""
-        kh = np.hypot(self.k, self.l)
-        kh[0,0] = 1.  # preventing div. by zero for wavenumber 0
+        kh = np.hypot(k, l)
+        kh[kh == 0.] = 1.  # preventing div. by zero for wavenumber 0
         mu = self.N * kh * self.H / self.f
         kh = kh[:,:,0]
-        self.L = np.zeros((self.n, self.n/2 + 1, 3, 3))
-        self.L[:,:,0,0] = - self.f * kh / (self.N[0] * np.tanh(mu[:,:,0]))
-        self.L[:,:,0,1] = + self.f * kh / (self.N[0] * np.sinh(mu[:,:,0]))
-        self.L[:,:,1,0] = + self.f * kh / (self.N[0] * np.sinh(mu[:,:,0]))
-        self.L[:,:,1,1] = - self.f * kh / (self.N[0] * np.tanh(mu[:,:,0])) \
+        L = np.zeros((l.size, k.size, 3, 3))
+        L[:,:,0,0] = - self.f * kh / (self.N[0] * np.tanh(mu[:,:,0]))
+        L[:,:,0,1] = + self.f * kh / (self.N[0] * np.sinh(mu[:,:,0]))
+        L[:,:,1,0] = + self.f * kh / (self.N[0] * np.sinh(mu[:,:,0]))
+        L[:,:,1,1] = - self.f * kh / (self.N[0] * np.tanh(mu[:,:,0])) \
             - self.f * kh / (self.N[1] * np.tanh(mu[:,:,1]))
-        self.L[:,:,1,2] = - self.f * kh / (self.N[1] * np.sinh(mu[:,:,1]))
-        self.L[:,:,2,1] = + self.f * kh / (self.N[1] * np.sinh(mu[:,:,1]))
-        self.L[:,:,2,2] = - self.f * kh / (self.N[1] * np.tanh(mu[:,:,1]))
+        L[:,:,1,2] = + self.f * kh / (self.N[1] * np.sinh(mu[:,:,1]))
+        L[:,:,2,1] = + self.f * kh / (self.N[1] * np.sinh(mu[:,:,1]))
+        L[:,:,2,2] = - self.f * kh / (self.N[1] * np.tanh(mu[:,:,1]))
+        return L
