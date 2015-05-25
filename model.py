@@ -472,7 +472,7 @@ class TwoEadyJump(Model):
             - Sx[0] * H[0] - U - Sx[1] * H[1]])
         self.v = np.array([0, - Sy[0] * H[0], - Sy[0] * H[0] - V,
             - Sy[0] * H[0] - V - Sy[1] * H[1]])
-        # Initialize mean PV gradients (no slope allowed yet).
+        # Initialize mean PV gradients.
         self.qx = np.array([
             - f**2 * Sy[0] / N[0]**2,
             + f**2 * Sy[0] / N[0]**2 - f**2 * V / g,
