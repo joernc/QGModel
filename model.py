@@ -73,10 +73,10 @@ class Model:
         # Compute (k Gy - l Gx) L^-1.
         GL = np.einsum('...ij,...jk->...ik', kk*Gy - ll*Gx, np.linalg.inv(L))
         # Solve eigenvalue problem.
-        s, v = np.linalg.eig(kk*U + ll*V + GL)
+        w, v = np.linalg.eig(kk*U + ll*V + GL)
         # Sort eigenvalues.
-        s.sort()
-        return s
+        w.sort()
+        return w
 
     def initnum(self, a, n, dt):
         """Initialize numerics."""
