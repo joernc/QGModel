@@ -56,24 +56,21 @@ class Model:
     def linstab(self, k, l):
         """Perform linear stability analysis for wavenumbers k and l.
         
-        Returns complex \omega.
+        Returns complex eigen-frequenies omega of the eigenvalue problem
+          [k U + l V + (k Qy - l Qx) L^-1] q = omega q.
+        The phase speeds are Re omega/k and the growth rates Im omega.
         """
         # Set up inversion matrix with specified wavenumbers.
         L = self.invmatrix(k[np.newaxis,:,np.newaxis],
             l[:,np.newaxis,np.newaxis])
-        # Set up mean flow matrix.
-        U = np.diag(self.u)
-        V = np.diag(self.v)
-        # Set up mean gradients matrix.
-        Gx = np.diag(self.qx)
-        Gy = np.diag(self.qy)
         # Allow proper broadcasting over matrices.
         kk = k[np.newaxis,:,np.newaxis,np.newaxis]
         ll = l[:,np.newaxis,np.newaxis,np.newaxis]
         # Compute (k Gy - l Gx) L^-1.
-        GL = np.einsum('...ij,...jk->...ik', kk*Gy - ll*Gx, np.linalg.inv(L))
+        GL = np.einsum('...ij,...jk->...ik', kk*np.diag(self.qy)
+            - ll*np.diag(self.qx), np.linalg.inv(L))
         # Solve eigenvalue problem.
-        w, v = np.linalg.eig(kk*U + ll*V + GL)
+        w, v = np.linalg.eig(kk*np.diag(self.u) + ll*np.diag(self.v) + GL)
         # Sort eigenvalues.
         w.sort()
         return w
@@ -89,7 +86,7 @@ class Model:
         self.time = 0.          # initial simulation time
         # Set up grid.
         self.grid()
-        # Initialize inversion matrix.
+        # Set up inversion matrix.
         self.L = self.invmatrix(self.k, self.l)
 
     def grid(self):
@@ -249,13 +246,13 @@ class TwoDim(Model):
         Model.__init__(self, 1)
 
     def initmean(self, qx, qy):
-        """Initialize the mean state."""
+        """Set up the mean state."""
         # Set up PV gradients.
         self.qx[0] = qx
         self.qy[0] = qy
 
     def invmatrix(self, k, l):
-        """Initialize the inversion matrix L."""
+        """Set up the inversion matrix L."""
         k2 = (k**2 + l**2)[:,:,0]
         k2[k2 == 0.] = 1.  # preventing div. by zero for wavenumber 0
         L = np.empty((l.size, k.size, 1, 1))
@@ -273,13 +270,13 @@ class Layered(Model):
     """
 
     def initmean(self, f, h, g, u, v, beta):
-        """Initialize the mean state."""
+        """Set up the mean state."""
         self.f = np.array(f)  # Coriolis parameter
         self.h = np.array(h)  # layer thicknesses
         self.g = np.array(g)  # buoyancy jumps at interfaces
         self.u = np.array(u)  # mean zonal flow
         self.v = np.array(v)  # mean meridional flow
-        # Initialize mean PV gradients.
+        # Set up mean PV gradients.
         self.qx = np.zeros(self.nz)
         self.qx[:-1] -= f**2 * (self.v[:-1] - self.v[1:]) / (self.h[:-1] * g)
         self.qx[1:] += f**2 * (self.v[:-1] - self.v[1:]) / (self.h[1::] * g)
@@ -288,7 +285,7 @@ class Layered(Model):
         self.qy[1:] -= f**2 * (self.u[:-1] - self.u[1:]) / (self.h[1::] * g)
 
     def invmatrix(self, k, l):
-        """Initialize the inversion matrix L."""
+        """Set up the inversion matrix L."""
         k2 = (k**2 + l**2)[:,:,0]
         k2[k2 == 0.] = 1.  # preventing div. by zero for wavenumber 0
         L = np.zeros((l.size, k.size, self.nz, self.nz))
@@ -318,19 +315,19 @@ class Eady(Model):
         Model.__init__(self, 2)
 
     def initmean(self, f, N, H, Sx, Sy):
-        """Initialize the mean state."""
+        """Set up the mean state."""
         self.f = f  # Coriolis parameter
         self.N = N  # buoyancy frequency
         self.H = H  # depth
-        # Initialize mean flow.
+        # Set up mean flow.
         self.u = np.array([0, - Sx * H])
         self.v = np.array([0, - Sy * H])
-        # Initialize mean PV gradients.
+        # Set up mean PV gradients.
         self.qx = np.array([- f**2 * Sy / N**2, + f**2 * Sy / N**2])
         self.qy = np.array([+ f**2 * Sx / N**2, - f**2 * Sx / N**2])
 
     def invmatrix(self, k, l):
-        """Initialize the inversion matrix L."""
+        """Set up the inversion matrix L."""
         kh = np.hypot(k, l)[:,:,0]
         kh[kh == 0.] = 1.  # preventing div. by zero for wavenumber 0
         mu = self.N * kh * self.H / self.f
@@ -361,14 +358,14 @@ class FloatingEady(Model):
         Model.__init__(self, 2)
 
     def initmean(self, f, N, H, Sx, Sy):
-        """Initialize the mean state."""
+        """Set up the mean state."""
         self.f = f            # Coriolis parameter
         self.N = np.array(N)  # buoyancy frequencies of the two layers
         self.H = H            # depth of upper layer
-        # Initialize mean flow.
+        # Set up mean flow.
         self.u = np.array([0, - Sx[0] * H])
         self.v = np.array([0, - Sy[0] * H])
-        # Initialize mean PV gradients.
+        # Set up mean PV gradients.
         self.qx = np.array([
             - f**2 * Sy[0] / N[0]**2,
             + f**2 * (Sy[0] / N[0]**2 - Sy[1] / N[1]**2)])
@@ -377,7 +374,7 @@ class FloatingEady(Model):
             - f**2 * (Sx[0] / N[0]**2 - Sx[1] / N[1]**2)])
 
     def invmatrix(self, k, l):
-        """Initialize the inversion matrix L."""
+        """Set up the inversion matrix L."""
         kh = np.hypot(k, l)[:,:,0]
         kh[kh == 0.] = 1.  # preventing div. by zero for wavenumber 0
         mu = self.N[0] * kh * self.H / self.f
@@ -410,14 +407,14 @@ class TwoEady(Model):
         Model.__init__(self, 3)
 
     def initmean(self, f, N, H, Sx, Sy):
-        """Initialize the mean state."""
+        """Set up the mean state."""
         self.f = f            # Coriolis parameter
         self.N = np.array(N)  # buoyancy frequencies of the two layers
         self.H = np.array(H)  # depths of the two layers
-        # Initialize mean flow.
+        # Set up mean flow.
         self.u = np.array([0, - Sx[0] * H[0], - Sx[0] * H[0] - Sx[1] * H[1]])
         self.v = np.array([0, - Sy[0] * H[0], - Sy[0] * H[0] - Sy[1] * H[1]])
-        # Initialize mean PV gradients.
+        # Set up mean PV gradients.
         self.qx = np.array([
             - f**2 * Sy[0] / N[0]**2,
             + f**2 * (Sy[0] / N[0]**2 - Sy[1] / N[1]**2),
@@ -428,7 +425,7 @@ class TwoEady(Model):
             - f**2 * Sx[1] / N[1]**2])
 
     def invmatrix(self, k, l):
-        """Initialize the inversion matrix L."""
+        """Set up the inversion matrix L."""
         kh = np.hypot(k, l)
         kh[kh == 0.] = 1.  # preventing div. by zero for wavenumber 0
         mu = self.N * kh * self.H / self.f
@@ -466,17 +463,17 @@ class TwoEadyJump(Model):
         Model.__init__(self, 4)
 
     def initmean(self, f, N, H, g, Sx, Sy, U, V):
-        """Initialize the mean state."""
+        """Set up the mean state."""
         self.f = f            # Coriolis parameter
         self.N = np.array(N)  # buoyancy frequencies of the two layers
         self.H = np.array(H)  # depths of the two layers
         self.g = g            # buoyancy jump at interface
-        # Initialize mean flow.
+        # Set up mean flow.
         self.u = np.array([0, - Sx[0] * H[0], - Sx[0] * H[0] - U,
             - Sx[0] * H[0] - U - Sx[1] * H[1]])
         self.v = np.array([0, - Sy[0] * H[0], - Sy[0] * H[0] - V,
             - Sy[0] * H[0] - V - Sy[1] * H[1]])
-        # Initialize mean PV gradients.
+        # Set up mean PV gradients.
         self.qx = np.array([
             - f**2 * Sy[0] / N[0]**2,
             + f**2 * Sy[0] / N[0]**2 - f**2 * V / g,
@@ -489,7 +486,7 @@ class TwoEadyJump(Model):
             - f**2 * Sx[1] / N[1]**2])
 
     def invmatrix(self, k, l):
-        """Initialize the inversion matrix L."""
+        """Set up the inversion matrix L."""
         kh = np.hypot(k, l)
         kh[kh == 0.] = 1.  # preventing div. by zero for wavenumber 0
         mu = self.N * kh * self.H / self.f
