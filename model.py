@@ -85,7 +85,7 @@ class Model:
         self.diffexp = 2    # exponent of diffusion operator
         self.hypodiff = 0.  # hypodiffusion coefficient
         self.threads = 1    # number of threads for FFT
-        self.time = 0.      # initial simulation time
+        self.clock = 0.     # initial simulation time
         # Set up grid.
         self.grid()
         # Set up inversion matrix.
@@ -114,7 +114,7 @@ class Model:
         """Perform time step."""
         self.advection()
         self.diffusion()
-        self.time += self.dt
+        self.clock += self.dt
 
     def advection(self):
         """Perform RK4 step for advective terms (linear and nonlinear)."""
@@ -196,7 +196,7 @@ class Model:
     def screenlog(self):
         """Print model state info on screen."""
         # Write time (in seconds).
-        sys.stdout.write(' {:15.0f}'.format(self.time))
+        sys.stdout.write(' {:15.0f}'.format(self.clock))
         # Write mean enstrophy for each layer.
         for i in range(self.nz):
             sys.stdout.write(' {:5e}'.format(np.mean(np.abs(self.q[:,:,i])**2)
@@ -219,7 +219,7 @@ class Model:
         # Save image for each layer.
         for i in range(self.nz):
             plt.imsave(
-                name + '/snapshots/{:03d}_{:015.0f}.png'.format(i, self.time),
+                name + '/snapshots/{:03d}_{:015.0f}.png'.format(i, self.clock),
                 qp[:,:,i], origin='lower', vmin=-m[i], vmax=m[i], cmap=cm_blues)
 
     def save(self, name):
@@ -228,7 +228,7 @@ class Model:
         if not os.path.isdir(name + '/data'):
             os.makedirs(name + '/data')
         # Save.
-        with open(name + '/data/{:015.0f}'.format(self.time), 'w') as f:
+        with open(name + '/data/{:015.0f}'.format(self.clock), 'w') as f:
             pickle.dump(self, f)
 
 

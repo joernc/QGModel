@@ -115,6 +115,6 @@ m.hypodiff = 1e-16
 for i in range(20000):
     m.timestep()
     m.screenlog()
-    if m.time % 250000. == 0:
+    if m.clock % 250000. == 0:
         m.save(folder)
         m.snapshot(folder)
