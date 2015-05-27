@@ -36,7 +36,8 @@ cm_blues = mcl.LinearSegmentedColormap('cm_blues', cdict, 256)
 
 class Model:
 
-    """General QG model
+    """
+    General QG model
 
     This is the skeleton of a QG model that consists of a number of conserved
     quantities that are advected horizontally.  Implementations of this model
@@ -54,7 +55,8 @@ class Model:
         self.qy = np.zeros(nz)  # mean meridional PV gradient
 
     def linstab(self, k, l):
-        """Perform linear stability analysis for wavenumbers k and l.
+        """
+        Perform linear stability analysis for wavenumbers k and l.
         
         Returns complex eigen-frequenies omega of the eigenvalue problem
           [k U + l V + (k Qy - l Qx) L^-1] q = omega q.
@@ -77,13 +79,13 @@ class Model:
 
     def initnum(self, a, n, dt):
         """Initialize numerics."""
-        self.a = a              # domain size
-        self.n = n              # number of Fourier modes per direction
-        self.dt = dt            # time step
-        self.diffexp = 2        # exponent of diffusion operator
-        self.hypodiff = 0.      # hypodiffusion coefficient
-        self.threads = 1        # number of threads for FFT
-        self.time = 0.          # initial simulation time
+        self.a = a          # domain size
+        self.n = n          # number of Fourier modes per direction
+        self.dt = dt        # time step
+        self.diffexp = 2    # exponent of diffusion operator
+        self.hypodiff = 0.  # hypodiffusion coefficient
+        self.threads = 1    # number of threads for FFT
+        self.time = 0.      # initial simulation time
         # Set up grid.
         self.grid()
         # Set up inversion matrix.
@@ -131,7 +133,8 @@ class Model:
             self.q *= np.exp(-self.hypodiff / k2 * self.dt)
 
     def advrhs(self, q):
-        """Calculate advective terms on RHS of PV equation.
+        """
+        Calculate advective terms on RHS of PV equation.
         
         Calculate mean-eddy and eddy-eddy advection terms:
             u q'_x + v q'_y + u' q_x + v' q_y + J(p', q')
@@ -146,7 +149,8 @@ class Model:
         return rhs
 
     def jacobian(self, A, B):
-        """Calculate Jacobian A_x B_y - A_y B_x.
+        """
+        Calculate Jacobian A_x B_y - A_y B_x.
         
         Transform Ax, Ay, Bx, By to physical space, perform multi-
         plication and subtraction, and transform back to spectral space.
@@ -236,7 +240,8 @@ def load(name, time):
 
 class TwoDim(Model):
 
-    """Two dimensional model
+    """
+    Two dimensional model
 
     This implements a two-dimensional model that consists of vorticity conser-
     vation.  The inversion relation is simply a Poisson equation.
@@ -262,7 +267,8 @@ class TwoDim(Model):
 
 class Layered(Model):
 
-    """Multi-layer model
+    """
+    Multi-layer model
 
     This implements a multi-layer model with a rigid lid.  See Vallis (2006)
     for the formulation and notation.  The layer thicknisses h, buoyancy
@@ -302,7 +308,8 @@ class Layered(Model):
 
 class Eady(Model):
 
-    """Eady model
+    """
+    Eady model
 
     This implements an Eady model that consists of surface and bottom buoyancy
     conservation and implicit interior dynamics determined by zero PV there.
@@ -341,7 +348,8 @@ class Eady(Model):
 
 class FloatingEady(Model):
 
-    """Floating Eady model
+    """
+    Floating Eady model
 
     This implements a "floating" Eady model that consists of a layer of
     constant PV coupled to an infinitely deep layer below that also has
@@ -389,7 +397,8 @@ class FloatingEady(Model):
 
 class TwoEady(Model):
 
-    """Two-Eady model
+    """
+    Two-Eady model
 
     This implements a two-Eady model that consists of two layers of
     constant PV coupled at a deformable interface (see Callies, Flierl,
@@ -444,7 +453,8 @@ class TwoEady(Model):
 
 class TwoEadyJump(Model):
 
-    """Two-Eady model with jump
+    """
+    Two-Eady model with jump
 
     This is a two-Eady model with an additional buoyancy and velocity jump
     at the interface.  The model then has an additional conserved quantity,
