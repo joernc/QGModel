@@ -37,8 +37,8 @@ import model
 #m.initmean(0, 2e-11)
 
 #folder = 'two-layer'
-#m = model.TwoLayer()
-#m.initmean(8e-5, 2.5e-2, 0., 0.)
+#m = model.Layered(2)
+#m.initmean(1e-4, 2*[250.], [1.6e-2], [2.5e-2, 0.], 2*[0.], 0.)
 
 folder = 'eady'
 m = model.Eady()

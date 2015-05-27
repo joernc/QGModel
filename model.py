@@ -263,39 +263,43 @@ class TwoDim(Model):
         return L
 
 
-class TwoLayer(Model):
+class Layered(Model):
 
-    """Two-layer model
+    """Multi-layer model
 
-    This implements a two-layer model with a rigid lid.  The two conserved
-    quantities are the PV anomalies in the two layers (q[0] is the upper-layer
-    PV, q[1] the lower-layer PV).  The deformation radius is prescribed by
-    specifying the deformation wavenumber kd (see e.g. Larichev and Held,
-    1995).
+    This implements a multi-layer model with a rigid lid.  See Vallis (2006)
+    for the formulation and notation.  The layer thicknisses h, buoyancy
+    jumps g, mean flows (u, v), and beta can be passed to initmean.
     """
 
-    def __init__(self):
-        Model.__init__(self, 2)
-
-    def initmean(self, kd, u, v, beta):
+    def initmean(self, f, h, g, u, v, beta):
         """Initialize the mean state."""
-        self.kd = kd  # deformation wavenumber
-        # Initialize mean mean flow (zero in lower layer).
-        self.u[0] = u
-        self.v[0] = v
+        self.f = np.array(f)  # Coriolis parameter
+        self.h = np.array(h)  # layer thicknesses
+        self.g = np.array(g)  # buoyancy jumps at interfaces
+        self.u = np.array(u)  # mean zonal flow
+        self.v = np.array(v)  # mean meridional flow
         # Initialize mean PV gradients.
-        self.qx = np.array([- kd**2 * v / 2, + kd**2 * v / 2])
-        self.qy = np.array([beta + kd**2 * u / 2, beta - kd**2 * u / 2])
+        self.qx = np.zeros(self.nz)
+        self.qx[:-1] -= f**2 * (self.v[:-1] - self.v[1:]) / (self.h[:-1] * g)
+        self.qx[1:] += f**2 * (self.v[:-1] - self.v[1:]) / (self.h[1::] * g)
+        self.qy = beta * np.ones(self.nz)
+        self.qy[:-1] += f**2 * (self.u[:-1] - self.u[1:]) / (self.h[:-1] * g)
+        self.qy[1:] -= f**2 * (self.u[:-1] - self.u[1:]) / (self.h[1::] * g)
 
     def invmatrix(self, k, l):
         """Initialize the inversion matrix L."""
         k2 = (k**2 + l**2)[:,:,0]
         k2[k2 == 0.] = 1.  # preventing div. by zero for wavenumber 0
-        L = np.empty((l.size, k.size, 2, 2))
-        L[:,:,0,0] = - k2 - self.kd**2 / 2
-        L[:,:,0,1] = + self.kd**2 / 2
-        L[:,:,1,0] = + self.kd**2 / 2
-        L[:,:,1,1] = - k2 - self.kd**2 / 2
+        L = np.zeros((l.size, k.size, self.nz, self.nz))
+        for i in range(self.nz):
+            L[:,:,i,i] -= k2
+            if i > 0:
+                L[:,:,i,i-1] += self.f**2 / (self.h[i] * self.g[i-1])
+                L[:,:,i,i] -= self.f**2 / (self.h[i] * self.g[i-1])
+            if i < self.nz - 1:
+                L[:,:,i,i] -= self.f**2 / (self.h[i] * self.g[i])
+                L[:,:,i,i+1] += self.f**2 / (self.h[i] * self.g[i])
         return L
 
 
