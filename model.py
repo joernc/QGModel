@@ -228,14 +228,15 @@ class Model:
         if not os.path.isdir(name + '/data'):
             os.makedirs(name + '/data')
         # Save.
-        f = open(name + '/data/{:015.0f}'.format(self.time), 'w')
-        pickle.dump(self, f)
+        with open(name + '/data/{:015.0f}'.format(self.time), 'w') as f:
+            pickle.dump(self, f)
 
 
 def load(name, time):
     """Load model state."""
-    f = open(name + '/data/{:015.0f}'.format(time), 'r')
-    return pickle.load(f)
+    with open(name + '/data/{:015.0f}'.format(time), 'r') as f:
+        m = pickle.load(f)
+    return m
 
 
 class TwoDim(Model):
