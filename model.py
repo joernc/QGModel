@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcl
 
 
-# Define blue colormap with nice blue.
+# Define blue colormap.
 cdict = {
     'red': ((0.0, 0.0, 0.0), (0.5, 0.216, 0.216), (1.0, 1.0, 1.0)),
     'green': ((0.0, 0.0, 0.0), (0.5, 0.494, 0.494), (1.0, 1.0, 1.0)),
@@ -42,7 +42,7 @@ class Model:
     This is the skeleton of a QG model that consists of a number of conserved
     quantities that are advected horizontally.  Implementations of this model
     need to specify the number of conserved quantities (nz) and supply an
-    inversion relation that yield the streamfuncion given the conserved quan-
+    inversion relation that yields the streamfuncion given the conserved quan-
     tities.  The model geometry is doubly periodic in the perturbations; mean
     flow and gradients in the conserved quantities can be prescribed.
     """
@@ -108,7 +108,7 @@ class Model:
         """Transform qp to spectral space and initialize q."""
         self.q = fftw.interfaces.numpy_fft.rfft2(qp, axes=(0, 1),
             threads=self.threads)
-        self.q[:,0,0] = 0.  # ensuring zero mean
+        self.q[0,0,:] = 0.  # ensuring zero mean
 
     def timestep(self):
         """Perform time step."""
