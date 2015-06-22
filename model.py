@@ -266,6 +266,44 @@ class TwoDim(Model):
         return L
 
 
+class Surface(Model):
+
+    """
+    Surface QG model
+
+    This implements an SQG model that consists of surface buoyancy conserva-
+    tion and implicit dynamics in an infinitely deep interior determined by
+    zero PV there.  The conserved quantity here is PV-like and implements the
+    "oceanographic" case, where the surface is an upper surface.  The dynamics
+    can also be used in an "atmospheric" case or a case with an interface
+    between two semi-infinite layers (see Held et al., 1995).  The conserved
+    quantity is
+      q[0] = - f b(0) / N^2.
+    """
+
+    def __init__(self):
+        Model.__init__(self, 1)
+
+    def initmean(self, f, N, Sx, Sy):
+        """Set up the mean state."""
+        self.f = f  # Coriolis parameter
+        self.N = N  # buoyancy frequency
+        # Set up mean flow.
+        self.u = np.array([0])
+        self.v = np.array([0])
+        # Set up mean PV gradients.
+        self.qx = np.array([- f**2 * Sy / N**2])
+        self.qy = np.array([+ f**2 * Sx / N**2])
+
+    def invmatrix(self, k, l):
+        """Set up the inversion matrix L."""
+        kh = np.hypot(k, l)[:,:,0]
+        kh[kh == 0.] = 1.  # preventing div. by zero for wavenumber 0
+        L = np.empty((l.size, k.size, 1, 1))
+        L[:,:,0,0] = - self.f * kh / self.N
+        return L
+
+
 class Layered(Model):
 
     """
@@ -278,7 +316,7 @@ class Layered(Model):
 
     def initmean(self, f, h, g, u, v, beta):
         """Set up the mean state."""
-        self.f = np.array(f)  # Coriolis parameter
+        self.f = f            # Coriolis parameter
         self.h = np.array(h)  # layer thicknesses
         self.g = np.array(g)  # buoyancy jumps at interfaces
         self.u = np.array(u)  # mean zonal flow

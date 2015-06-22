@@ -36,6 +36,10 @@ import model
 #m = model.TwoDim()
 #m.initmean(0, 2e-11)
 
+#folder = 'sqg'
+#m = model.Surface()
+#m.initmean(1e-4, 8e-4, 1e-4, 0)
+
 #folder = 'two-layer'
 #m = model.Layered(2)
 #m.initmean(1e-4, 2*[250.], [1.6e-2], [2.5e-2, 0.], 2*[0.], 0.)
