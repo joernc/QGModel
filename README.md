@@ -7,11 +7,12 @@ This is Python code that solves the nonlinear QG equations for PV anomalies on a
 At the moment, six model types have been implemented:
 
 1. two-dimensional dynamics (`TwoDim`),
-2. multi-layer dynamics (`Layered`),
-3. Eady dynamics (`Eady`),
-4. floating Eady dynamics (`FloatingEady`),
-5. two-Eady dynamics (`TwoEady`),
-6. two-Eady dynamics with buoyancy jump (`TwoEadyJump`).
+2. surface QG dynamics (`Surface`),
+3. multi-layer dynamics (`Layered`),
+4. Eady dynamics (`Eady`),
+5. floating Eady dynamics (`FloatingEady`),
+6. two-Eady dynamics (`TwoEady`),
+7. two-Eady dynamics with buoyancy jump (`TwoEadyJump`).
 
 See `run.py` for an example of how a model is initialized and run.
 
