@@ -86,7 +86,7 @@ plt.show()
 # Callies et al. (2015) to account for the the reduced resolution.
 
 m.initnum(5e5, 128, 5000.)
-m.initq(1e-5 * np.random.rand(128, 128, m.nz))
+m.initq(1e-4 * np.random.rand(128, 128, m.nz))
 m.snapshot(folder)
 
 m.nu = 2.5e46 * 4.**20

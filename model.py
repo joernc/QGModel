@@ -21,7 +21,6 @@ import os
 import pickle
 
 import numpy as np
-import pyfftw as fftw
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcl
 
@@ -106,8 +105,7 @@ class Model:
 
     def initq(self, qp):
         """Transform qp to spectral space and initialize q."""
-        self.q = fftw.interfaces.numpy_fft.rfft2(qp, axes=(0, 1),
-            threads=self.threads)
+        self.q = self.rfft2(qp, axes=(0, 1))
         self.q[0,0,:] = 0.  # ensuring zero mean
 
     def timestep(self):
@@ -164,8 +162,7 @@ class Model:
 
     def fft_truncate(self, up):
         """Perform forward FFT on physical field up and truncate (3/2 rule)."""
-        us = fftw.interfaces.numpy_fft.rfft2(up, axes=(0, 1),
-            threads=self.threads)
+        us = self.rfft2(up, axes=(0, 1))
         u = np.zeros((self.n, self.n/2 + 1, self.nz), dtype=complex)
         u[: self.n/2, :, :] = us[: self.n/2, : self.n/2 + 1, :]
         u[self.n/2 :, :, :] = us[self.n : 3*self.n/2, : self.n/2 + 1, :]
@@ -176,8 +173,25 @@ class Model:
         us = np.zeros((3*self.n/2, 3*self.n/4 + 1, self.nz), dtype=complex)
         us[: self.n/2, : self.n/2 + 1, :] = u[: self.n/2, :, :]
         us[self.n : 3*self.n/2, : self.n/2 + 1, :] = u[self.n/2 :, :, :]
-        return fftw.interfaces.numpy_fft.irfft2(2.25*us, axes=(0, 1),
-            threads=self.threads)
+        return self.irfft2(2.25*us, axes=(0, 1))
+
+    def rfft2(self, u, axes=(-2,-1)):
+        """Real 2D FFT: use FFTW if available, otherwise numpy's FFT."""
+        try:
+            import pyfftw as fftw
+            us = fftw.interfaces.numpy_fft.rfft2(u, axes=axes, threads=self.threads)
+        except ImportError:
+            us = np.fft.rfft2(u, axes=axes)
+        return us
+
+    def irfft2(self, us, axes=(-2,-1)):
+        """Real 2D IFFT: use FFTW if available, otherwise numpy's FFT."""
+        try:
+            import pyfftw as fftw
+            u = fftw.interfaces.numpy_fft.irfft2(us, axes=axes, threads=self.threads)
+        except ImportError:
+            u = np.fft.irfft2(us, axes=axes)
+        return u
 
     def doubleres(self):
         """Double the resolution, interpolate fields."""
@@ -209,8 +223,7 @@ class Model:
         if not os.path.isdir(name + '/snapshots'):
             os.makedirs(name + '/snapshots')
         # Transform to physical space.
-        qp = fftw.interfaces.numpy_fft.irfft2(self.q, axes=(0, 1),
-            threads=self.threads)
+        qp = self.irfft2(self.q, axes=(0, 1))
         # Add mean gradients
         qp += self.qx * (self.x - self.a / 2)
         qp += self.qy * (self.y - self.a / 2)
@@ -445,7 +458,7 @@ class TwoEady(Model):
     quantities at the surface, the interface between the layers, and the
     bottom:
       q[0] = - f b(0) / N[0]^2,
-      q[1] = + f [b^+(-H[0]) / N[0]^2 - b^-(-H[0]) / N[1]^2,
+      q[1] = + f [b^+(-H[0]) / N[0]^2 - b^-(-H[0]) / N[1]^2],
       q[0] = + f b(-H[0]-H[1]) / N[1]^2,
     where N[0] and N[1] are the buoyancy frequencies of the two layers and H[0]
     and H[1] are their depths.
