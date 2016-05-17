@@ -57,7 +57,7 @@ class Model:
         """
         Perform linear stability analysis for wavenumbers k and l.
         
-        Returns complex eigen-frequenies omega of the eigenvalue problem
+        Returns complex eigen-frequencies omega of the eigenvalue problem
           [k U + l V + (k Qy - l Qx) L^-1] q = omega q.
         The phase speeds are Re omega/k and the growth rates Im omega.
         """
